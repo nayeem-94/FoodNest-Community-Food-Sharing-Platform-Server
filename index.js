@@ -24,7 +24,7 @@ const client = new MongoClient(uri, {
 });
 
 app.get("/", (req, res) => {
-    res.send("FoodNest API Running nayeem 🚀");
+    res.send("FoodNest API Running nayeem  yoo🚀");
 });
 
 
