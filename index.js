@@ -51,6 +51,16 @@ async function run() {
             res.send(foods);
         });
 
+        app.get("/featured-foods", async (req, res) => {
+            const foods = await db
+            .collection("foods")
+            .find()
+            .sort({ quantity: -1 }) // highest first
+            .limit(6)               // only 6 items
+            .toArray();
+            res.send(foods);
+        });
+
 
 
 
