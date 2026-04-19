@@ -61,9 +61,17 @@ async function run() {
             res.send(foods);
         });
 
+        app.get("/my-foods", async (req, res) => {
 
+            const email = req.query.email;
+            // const email = "nayeem11720@gmail.com";
 
+            const query = { useremail: email };
 
+           const result = await db.collection("foods").find(query).toArray();
+
+            res.send(result);
+        });
 
 
 
