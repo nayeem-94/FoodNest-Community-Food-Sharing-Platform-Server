@@ -72,6 +72,21 @@ async function run() {
             res.send(result);
         });
 
+        app.get("/food/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const query = { _id: new ObjectId(id) };
+                const result = await db.collection("foods").findOne(query);
+        
+                if (!result) {
+                     return res.status(404).send({ message: "Food not found" });
+                }
+                res.send(result);
+             } catch (error) {
+                res.status(500).send({ message: "Error fetching food details" });
+            }
+        });
+
 
 
         app.patch("/foods/:id", async (req, res) => {
@@ -127,7 +142,7 @@ async function run() {
             }
         });
 
-        
+
 
 
 
