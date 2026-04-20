@@ -75,6 +75,37 @@ async function run() {
 
 
 
+        app.patch("/foods/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updatedFood = req.body;
+
+                if (!ObjectId.isValid(id)) {
+                    return res.status(400).send({ message: "Invalid ID format" });
+                }       
+
+                delete updatedFood._id;
+
+                const query = { _id: new ObjectId(id) };
+                const updateDoc = {
+                    $set: updatedFood,
+                };
+
+                const result = await db.collection("foods").updateOne(query, updateDoc);
+
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: "Food item not found" });
+                }
+                res.send(result);
+        
+            } catch (error) 
+            {
+                 console.error("Update Error:", error);
+                res.status(500).send({ message: error.message || "Failed to update food item" });
+            }
+        });
+
+
 
     }
     finally {
