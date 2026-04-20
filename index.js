@@ -64,7 +64,6 @@ async function run() {
         app.get("/my-foods", async (req, res) => {
 
             const email = req.query.email;
-            // const email = "nayeem11720@gmail.com";
 
             const query = { useremail: email };
 
@@ -104,6 +103,31 @@ async function run() {
                 res.status(500).send({ message: error.message || "Failed to update food item" });
             }
         });
+
+        app.delete("/foods/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+        
+                if (!ObjectId.isValid(id)) {
+                    return res.status(400).send({ message: "Invalid ID format" });
+                }
+
+                const query = { _id: new ObjectId(id) };
+                const result = await db.collection("foods").deleteOne(query);
+
+                if (result.deletedCount === 1) {
+                    res.send(result);
+                } else {
+                    res.status(404).send({ message: "Food item not found" });
+                }
+
+            } catch (error) {
+                console.error("Delete Error:", error);
+                res.status(500).send({ message: "Internal Server Error" });
+            }
+        });
+
+        
 
 
 
