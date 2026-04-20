@@ -72,6 +72,7 @@ async function run() {
             res.send(result);
         });
 
+        // get food details by id
         app.get("/food/:id", async (req, res) => {
             try {
                 const id = req.params.id;
