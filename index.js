@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
+const admin = require("firebase-admin");
 const port = process.env.PORT || 3000;
 
 
@@ -11,6 +12,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json())
 
+
+const serviceAccount = require("./foodnest-6b07d-firebase-admin.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 const uri = process.env.MONGO_URI;
 
@@ -28,6 +35,29 @@ app.get("/", (req, res) => {
 });
 
 
+const verifyFireBaseToken = async (req, res, next) =>{
+    
+    const authorization = req.headers.authorization;
+    if(!authorization){
+        return res.status(401).send({message: 'unauthorized access'})
+    }
+    const token = authorization.split(' ')[1];
+    if(!token){
+        return res.status(401).send({message: 'unauthorized access'})
+    }
+
+    // verify token
+    try{
+        const decoded = await admin.auth().verifyIdToken(token);
+        console.log('after decode token', decoded);
+        req.token_email = decoded.email;
+        next();
+    }
+    catch{
+        return res.status(401).send({message: 'unauthorized access'})
+    }
+    
+}   
 
 async function run() {
     try {
@@ -40,13 +70,15 @@ async function run() {
         const db = client.db('foodnest_db');
 
         // test route
-        app.post("/foods", async (req, res) => {
+        app.post("/foods",verifyFireBaseToken, async (req, res) => {
             const food = req.body;
             const result = await db.collection("foods").insertOne(food);
             res.send(result);
         });
 
-        app.get("/foods", async (req, res) => {
+        app.get("/foods",verifyFireBaseToken , async (req, res) => {
+            // console.log("headers",req.headers);
+
             const foods = await db.collection("foods").find().toArray();
             res.send(foods);
         });
@@ -61,7 +93,7 @@ async function run() {
             res.send(foods);
         });
 
-        app.get("/my-foods", async (req, res) => {
+        app.get("/my-foods",verifyFireBaseToken, async (req, res) => {
 
             const email = req.query.email;
 
@@ -72,8 +104,7 @@ async function run() {
             res.send(result);
         });
 
-        // get food details by id
-        app.get("/food/:id", async (req, res) => {
+        app.get("/food/:id",verifyFireBaseToken, async (req, res) => {
             try {
                 const id = req.params.id;
                 const query = { _id: new ObjectId(id) };
@@ -89,8 +120,7 @@ async function run() {
         });
 
 
-
-        app.patch("/foods/:id", async (req, res) => {
+        app.patch("/foods/:id",verifyFireBaseToken, async (req, res) => {
             try {
                 const id = req.params.id;
                 const updatedFood = req.body;
@@ -120,7 +150,7 @@ async function run() {
             }
         });
 
-        app.delete("/foods/:id", async (req, res) => {
+        app.delete("/foods/:id",verifyFireBaseToken, async (req, res) => {
             try {
                 const id = req.params.id;
         
@@ -143,18 +173,12 @@ async function run() {
             }
         });
 
-
-
-
-
     }
     finally {
 
     }
 }
 run().catch(console.dir);
-
-
 
 
 app.listen(3000, () => console.log("Server running"));
