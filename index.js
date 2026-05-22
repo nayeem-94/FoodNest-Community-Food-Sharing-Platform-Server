@@ -123,13 +123,13 @@ async function run() {
                 // 1. update request
                 await foodRequestsCollection.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: { status: "accepted" } }
+                    { $set: { status: "Accepted" } }
                 );
 
                 // 2. update food
                 await db.collection("foods").updateOne(
                     { _id: new ObjectId(foodId) },
-                    { $set: { food_status: "donated" } }
+                    { $set: { food_status: "Donated" } }
                 );
 
                 // 3. reject other pending requests (IMPORTANT)
@@ -156,7 +156,7 @@ async function run() {
 
                 const result = await foodRequestsCollection.updateOne(
                     { _id: new ObjectId(id) },
-                    { $set: { status: "rejected" } }
+                    { $set: { status: "Rejected" } }
                 );
 
                 res.send(result);
@@ -173,7 +173,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/foods",verifyFireBaseToken , async (req, res) => {
+        app.get("/foods" , async (req, res) => {
             // console.log("headers",req.headers);
 
             const foods = await db.collection("foods").find().toArray();
