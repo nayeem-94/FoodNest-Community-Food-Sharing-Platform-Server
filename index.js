@@ -49,7 +49,7 @@ const verifyFireBaseToken = async (req, res, next) =>{
     // verify token
     try{
         const decoded = await admin.auth().verifyIdToken(token);
-        console.log('after decode token', decoded);
+        // console.log('after decode token', decoded);
         req.token_email = decoded.email;
         next();
     }
@@ -68,6 +68,103 @@ async function run() {
 
 
         const db = client.db('foodnest_db');
+        const foodRequestsCollection = db.collection("foodRequests");
+
+
+        //foodreqst post api
+
+        app.post("/foodRequests", verifyFireBaseToken, async (req, res) => {
+                try 
+                {
+                    const request = req.body;
+
+                    // prevent duplicate request
+                    const exists = await foodRequestsCollection.findOne({
+                        foodId: request.foodId,
+                        userEmail: request.userEmail
+                    });
+
+                    if (exists) {
+                        return res.send({ message: "Already requested" });
+                    }
+
+                    const result = await foodRequestsCollection.insertOne(request);
+                    res.send(result);
+
+                } 
+                catch (error) 
+                {
+                    res.status(500).send({ message: "Failed to create request" });
+                }
+        });
+
+        // get the requests of a user
+        app.get("/food-requests/:foodId", verifyFireBaseToken, async (req, res) => {
+            try {
+                const foodId = req.params.foodId;
+
+                const result = await foodRequestsCollection
+                    .find({ foodId })
+                    .toArray();
+
+                res.send(result);
+
+            } catch (error) {
+                res.status(500).send({ message: "Failed to get requests" });
+            }
+        });
+
+        //update request accept 
+        app.patch("/accept-request/:id", verifyFireBaseToken, async (req, res) => {
+            try {
+                const id = req.params.id;
+                const { foodId } = req.body;
+
+                // 1. update request
+                await foodRequestsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { status: "accepted" } }
+                );
+
+                // 2. update food
+                await db.collection("foods").updateOne(
+                    { _id: new ObjectId(foodId) },
+                    { $set: { food_status: "donated" } }
+                );
+
+                // 3. reject other pending requests (IMPORTANT)
+                await foodRequestsCollection.updateMany(
+                    {
+                        foodId,
+                        _id: { $ne: new ObjectId(id) },
+                        status: "pending"
+                    },
+                    { $set: { status: "rejected" } }
+                );
+
+                res.send({ message: "Request accepted" });
+
+            } catch (error) {
+                res.status(500).send({ message: "Accept failed" });
+            }
+        });
+        
+        // reject request
+        app.patch("/reject-request/:id", verifyFireBaseToken, async (req, res) => {
+            try {
+                const id = req.params.id;
+
+                const result = await foodRequestsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { status: "rejected" } }
+                );
+
+                res.send(result);
+
+            } catch (error) {
+                res.status(500).send({ message: "Reject failed" });
+            }
+        });
 
         // test route
         app.post("/foods",verifyFireBaseToken, async (req, res) => {
